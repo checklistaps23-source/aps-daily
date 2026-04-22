@@ -26,13 +26,23 @@ export default function Checklist({ vehicle, type, onBack }) {
     const missing = []
     template.forEach(s => s.items.forEach(item => {
       if (item.required && !values[item.id] && item.type !== 'textarea') {
-        missing.push(item.label)
+        missing.push(item.id)
       }
     }))
-    if (missing.length > 0) {
-      alert(missing.length + ' champ(s) obligatoire(s) manquant(s)')
-      return
-    }
+    
+
+
+if (missing.length > 0) {
+  const firstMissing = missing[0]
+  const el = document.getElementById('field_' + firstMissing)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.style.outline = '3px solid #E8192C'
+    setTimeout(() => { el.style.outline = '' }, 3000)
+  }
+  return
+}
+
     try {
       const BAD_VALUES = ['nok', 'remplacer', 'insuf', 'usure', 'sale', 'pleine']
       const defautsAuto = []
@@ -198,7 +208,7 @@ export default function Checklist({ vehicle, type, onBack }) {
 
     const hasIssue = val==='nok'||val==='remplacer'||val==='insuf'
     return (
-      <div key={item.id} style={{background:card,border:'1px solid '+(hasIssue?'rgba(232,25,44,0.3)':border),borderRadius:'12px',padding:'14px',marginBottom:'8px'}}>
+      <div id={'field_' + item.id} key={item.id} style={{background:card,border:'1px solid '+(hasIssue?'rgba(232,25,44,0.3)':border),borderRadius:'12px',padding:'14px',marginBottom:'8px'}}>
         <div style={{fontSize:'14px',fontWeight:'500',marginBottom:'10px'}}>{item.label}{req}</div>
         {control}
       </div>
