@@ -113,6 +113,17 @@ export default function Parametres() {
     setEditingSections(s)
   }
 
+  const moveItem = (sIdx, iIdx, direction) => {
+    const s = JSON.parse(JSON.stringify(editingSections))
+    const items = s[sIdx].items
+    const newIdx = iIdx + direction
+    if (newIdx < 0 || newIdx >= items.length) return
+    const temp = items[iIdx]
+    items[iIdx] = items[newIdx]
+    items[newIdx] = temp
+    setEditingSections(s)
+  }
+
   const addItem = (sIdx) => {
     const label = (newItemLabel[sIdx] || '').trim()
     if (!label) return
@@ -158,15 +169,25 @@ export default function Parametres() {
                 </button>
               </div>
               {section.items.map((item, iIdx) => (
-                <div key={item.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid '+border}}>
-                  <div>
+                <div key={item.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid '+border,gap:'8px'}}>
+                  <div style={{flex:1}}>
                     <span style={{fontSize:'13px',fontWeight:'600'}}>{item.label}</span>
                     <span style={{fontSize:'11px',color:text3,marginLeft:'8px'}}>{item.type}</span>
                     {item.required && <span style={{fontSize:'10px',color:red,marginLeft:'6px'}}>*</span>}
                   </div>
-                  <button onClick={() => deleteItem(sIdx, iIdx)} style={{background:'transparent',border:'1px solid rgba(232,25,44,0.3)',color:red,borderRadius:'7px',padding:'3px 8px',fontSize:'11px',cursor:'pointer'}}>
-                    Suppr
-                  </button>
+                  <div style={{display:'flex',gap:'4px'}}>
+                    <button onClick={() => moveItem(sIdx, iIdx, -1)} disabled={iIdx === 0}
+                      style={{background:'transparent',border:'1px solid '+border,color:iIdx===0?text3:'#fff',borderRadius:'6px',padding:'3px 7px',fontSize:'12px',cursor:iIdx===0?'default':'pointer'}}>
+                      ↑
+                    </button>
+                    <button onClick={() => moveItem(sIdx, iIdx, 1)} disabled={iIdx === section.items.length - 1}
+                      style={{background:'transparent',border:'1px solid '+border,color:iIdx===section.items.length-1?text3:'#fff',borderRadius:'6px',padding:'3px 7px',fontSize:'12px',cursor:iIdx===section.items.length-1?'default':'pointer'}}>
+                      ↓
+                    </button>
+                    <button onClick={() => deleteItem(sIdx, iIdx)} style={{background:'transparent',border:'1px solid rgba(232,25,44,0.3)',color:red,borderRadius:'6px',padding:'3px 7px',fontSize:'12px',cursor:'pointer'}}>
+                      🗑
+                    </button>
+                  </div>
                 </div>
               ))}
               <div style={{display:'flex',gap:'8px',marginTop:'10px'}}>
