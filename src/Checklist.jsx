@@ -1,9 +1,9 @@
 
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CHECKLIST_ALPHA, CHECKLIST_TPMR, CHECKLIST_VSL } from './checklists'
 import { db } from './firebase'
-import { collection, addDoc, getDocs, query, where, Timestamp } from 'firebase/firestore'
+import { collection, addDoc, getDocs, query, where, Timestamp, doc, getDoc } from 'firebase/firestore'
 
 const red = '#E8192C'
 const dark3 = '#1A1E28'
@@ -14,11 +14,44 @@ const text3 = '#555B6E'
 const green = '#1DB954'
 const orange = '#FF8C00'
 
-export default function Checklist({ vehicle, type, onBack }) {
-  const [values, setValues] = useState({})
+const TEMPLATES_BASE = {
+  alpha: CHECKLIST_ALPHA,
+  tpmr: CHECKLIST_TPMR,
+  vsl: CHECKLIST_VSL
+}
 
-  const template = type === 'alpha' ? CHECKLIST_ALPHA
-    : type === 'tpmr' ? CHECKLIST_TPMR : CHECKLIST_VSL
+export default function Checklist({ vehicle, type, vehiculeId, onBack }) {
+  const [values, setValues] = useState({})
+  const [template, setTemplate] = useState(TEMPLATES_BASE[type] || CHECKLIST_ALPHA)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadTemplate = async () => {
+      try {
+        if (vehiculeId) {
+          const ref = doc(db, 'checklistsTemplate', vehiculeId)
+          const snap = await getDoc(ref)
+          if (snap.exists() && snap.data().sections) {
+            setTemplate(snap.data().sections)
+            setLoading(false)
+            return
+          }
+        }
+        // Chercher par nom de vehicule
+        const q = query(collection(db, 'checklistsTemplate'), where('vehiculeNom', '==', vehicle))
+        const snap = await getDocs(q)
+        if (!snap.empty) {
+          setTemplate(snap.docs[0].data().sections)
+        } else {
+          setTemplate(TEMPLATES_BASE[type] || CHECKLIST_ALPHA)
+        }
+      } catch(e) {
+        setTemplate(TEMPLATES_BASE[type] || CHECKLIST_ALPHA)
+      }
+      setLoading(false)
+    }
+    loadTemplate()
+  }, [vehicle, vehiculeId, type])
 
   const set = (id, val) => setValues(v => ({ ...v, [id]: val }))
 
@@ -29,19 +62,17 @@ export default function Checklist({ vehicle, type, onBack }) {
         missing.push(item.id)
       }
     }))
-    
 
-
-if (missing.length > 0) {
-  const firstMissing = missing[0]
-  const el = document.getElementById('field_' + firstMissing)
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    el.style.outline = '3px solid #E8192C'
-    setTimeout(() => { el.style.outline = '' }, 3000)
-  }
-  return
-}
+    if (missing.length > 0) {
+      const firstMissing = missing[0]
+      const el = document.getElementById('field_' + firstMissing)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        el.style.outline = '3px solid #E8192C'
+        setTimeout(() => { el.style.outline = '' }, 3000)
+      }
+      return
+    }
 
     try {
       const BAD_VALUES = ['nok', 'remplacer', 'insuf', 'usure', 'sale', 'pleine']
@@ -180,13 +211,13 @@ if (missing.length > 0) {
             <span style={{fontSize:'12px',color:text2}}>{item.label}</span>
             <span style={{fontSize:'14px',fontWeight:'700',color:col}}>{num} bar</span>
           </div>
-         <div style={{position:'relative',height:'28px',display:'flex',alignItems:'center'}}>
-  <div style={{position:'absolute',left:0,right:0,height:'4px',borderRadius:'2px',background:'#333'}}/>
-  <div style={{position:'absolute',left:0,height:'4px',borderRadius:'2px',background:col,width:((num/300)*100)+'%',transition:'width 0.1s,background 0.3s'}}/>
-  <input type="range" min="0" max="300" step="10" value={num}
-    onChange={e => set(item.id, e.target.value)}
-    style={{position:'relative',width:'100%',WebkitAppearance:'none',appearance:'none',background:'transparent',cursor:'pointer',zIndex:1}}/>
-</div>
+          <div style={{position:'relative',height:'28px',display:'flex',alignItems:'center'}}>
+            <div style={{position:'absolute',left:0,right:0,height:'4px',borderRadius:'2px',background:'#333'}}/>
+            <div style={{position:'absolute',left:0,height:'4px',borderRadius:'2px',background:col,width:((num/300)*100)+'%',transition:'width 0.1s,background 0.3s'}}/>
+            <input type="range" min="0" max="300" step="10" value={num}
+              onChange={e => set(item.id, e.target.value)}
+              style={{position:'relative',width:'100%',WebkitAppearance:'none',appearance:'none',background:'transparent',cursor:'pointer',zIndex:1}}/>
+          </div>
           <div style={{display:'flex',justifyContent:'space-between',fontSize:'10px',marginTop:'4px'}}>
             <span style={{color:red}}>0</span><span style={{color:text3}}>100</span><span style={{color:text3}}>200</span><span style={{color:green}}>300 bar</span>
           </div>
@@ -211,6 +242,14 @@ if (missing.length > 0) {
       <div id={'field_' + item.id} key={item.id} style={{background:card,border:'1px solid '+(hasIssue?'rgba(232,25,44,0.3)':border),borderRadius:'12px',padding:'14px',marginBottom:'8px'}}>
         <div style={{fontSize:'14px',fontWeight:'500',marginBottom:'10px'}}>{item.label}{req}</div>
         {control}
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div style={{padding:'32px',textAlign:'center',color:text2}}>
+        Chargement de la checklist...
       </div>
     )
   }

@@ -25,6 +25,11 @@ export default function App() {
   const [screen, setScreen] = useState('home')
   const [fleetType, setFleetType] = useState(null)
   const [selectedVehicle, setSelectedVehicle] = useState(null)
+
+
+
+const [selectedVehiculeId, setSelectedVehiculeId] = useState(null)
+
   const { vehicules } = useVehicules()
 
   return (
@@ -65,7 +70,7 @@ export default function App() {
           </button>
           <h2 style={{color:red,marginBottom:'16px'}}>{FLEET[fleetType].name}</h2>
           {vehicules.filter(v => v.type === fleetType).map(v => (
-            <div key={v.id} onClick={() => setSelectedVehicle(v.nom)}
+            <div key={v.id} onClick={() => { setSelectedVehicle(v.nom); setSelectedVehiculeId(v.id) }}
               style={{background:card,border:'1px solid '+border,borderRadius:'14px',padding:'16px',marginBottom:'10px',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
                 <span style={{fontSize:'22px'}}>{FLEET[fleetType].icon}</span>
@@ -79,11 +84,16 @@ export default function App() {
 
       {/* CHECKLIST */}
       {screen === 'vehicles' && selectedVehicle && (
-        <Checklist
-          vehicle={selectedVehicle}
-          type={fleetType}
-          onBack={() => setSelectedVehicle(null)}
-        />
+       
+
+
+<Checklist
+  vehicle={selectedVehicle}
+  type={fleetType}
+  vehiculeId={selectedVehiculeId}
+  onBack={() => { setSelectedVehicle(null); setSelectedVehiculeId(null) }}
+/>
+
       )}
 
 
