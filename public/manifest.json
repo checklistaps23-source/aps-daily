@@ -1,0 +1,17 @@
+
+
+
+
+{
+  "name": "APS Daily",
+  "short_name": "APS Daily",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D0F14",
+  "theme_color": "#E8192C",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/G3qZhf4R/icon.jpg"
+    }
+  ]
+}
