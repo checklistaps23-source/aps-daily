@@ -27,8 +27,7 @@ export default function Garage() {
     return () => unsub()
   }, [])
 
-  const resolve = async (id) => {
-    if (!window.confirm('Probleme resolu ? Il sera supprime.')) return
+const resolve = async (id) => {
     await deleteDoc(doc(db, 'defects', id))
   }
 
