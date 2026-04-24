@@ -28,7 +28,7 @@ function CarteVehicule({ vehicle, items, resolve, compact }) {
         if (el.scrollTop >= maxScroll - 10) {
           el.scrollTo({ top: 0, behavior: 'smooth' })
         } else {
-          el.scrollBy({ top: 80, behavior: 'smooth' })
+          el.scrollBy({ top: el.clientHeight * 0.6, behavior: 'smooth' })
         }
       }
     }, 5000)
