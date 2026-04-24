@@ -69,7 +69,7 @@ overflow: 'hidden'
             borderLeft: '3px solid ' + red,
             flexShrink: 0
           }}>
-            <div style={{fontSize: compact ? '13px' : '15px',fontWeight:'600',marginBottom:'6px'}}>{d.description}</div>
+            <div style={{fontSize: compact ? '12px' : '14px',fontWeight:'600',marginBottom:'6px',wordBreak:'break-word',lineHeight:'1.3'}}>{d.description}</div>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div style={{fontSize:'11px',color:text3}}>
                 👤 {d.reportedBy}
