@@ -27,7 +27,7 @@ export default function Garage() {
     return () => unsub()
   }, [])
 
-const resolve = async (id) => {
+  const resolve = async (id) => {
     await deleteDoc(doc(db, 'defects', id))
   }
 
@@ -49,33 +49,37 @@ const resolve = async (id) => {
 
   // VUE TV
   if (tvMode) {
+    const cols = vehiculesTouches <= 2 ? 2 : vehiculesTouches <= 4 ? 2 : vehiculesTouches <= 6 ? 3 : 4
+    const totalDefauts = defects.length
+    const compact = totalDefauts > 6
+
     return (
       <div style={{
         position:'fixed',top:0,left:0,right:0,bottom:0,
         background:dark,
         display:'flex',flexDirection:'column',
         zIndex:999,
-        padding:'20px'
+        padding: compact ? '12px' : '20px'
       }}>
         {/* Header TV */}
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px'}}>
-          <div style={{display:'flex',alignItems:'center',gap:'20px'}}>
-            <div style={{fontSize:'28px',fontWeight:'900',color:red}}>🔧 GARAGE</div>
-            <div style={{background:'rgba(232,25,44,0.1)',border:'1px solid rgba(232,25,44,0.3)',borderRadius:'10px',padding:'6px 16px'}}>
-              <span style={{fontSize:'22px',fontWeight:'900',color:red}}>{openCount}</span>
-              <span style={{fontSize:'13px',color:text3,marginLeft:'6px'}}>defauts</span>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom: compact ? '10px' : '20px'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
+            <div style={{fontSize: compact ? '22px' : '28px',fontWeight:'900',color:red}}>🔧 GARAGE</div>
+            <div style={{background:'rgba(232,25,44,0.1)',border:'1px solid rgba(232,25,44,0.3)',borderRadius:'10px',padding:'4px 12px'}}>
+              <span style={{fontSize: compact ? '18px' : '22px',fontWeight:'900',color:red}}>{openCount}</span>
+              <span style={{fontSize:'12px',color:text3,marginLeft:'6px'}}>defauts</span>
             </div>
-            <div style={{background:'rgba(255,140,0,0.1)',border:'1px solid rgba(255,140,0,0.3)',borderRadius:'10px',padding:'6px 16px'}}>
-              <span style={{fontSize:'22px',fontWeight:'900',color:orange}}>{vehiculesTouches}</span>
-              <span style={{fontSize:'13px',color:text3,marginLeft:'6px'}}>vehicules</span>
+            <div style={{background:'rgba(255,140,0,0.1)',border:'1px solid rgba(255,140,0,0.3)',borderRadius:'10px',padding:'4px 12px'}}>
+              <span style={{fontSize: compact ? '18px' : '22px',fontWeight:'900',color:orange}}>{vehiculesTouches}</span>
+              <span style={{fontSize:'12px',color:text3,marginLeft:'6px'}}>vehicules</span>
             </div>
           </div>
-          <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
-            <div style={{fontSize:'13px',color:text3}}>
+          <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+            <div style={{fontSize:'12px',color:text3}}>
               {new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}
             </div>
             <button onClick={() => setTvMode(false)}
-              style={{padding:'8px 16px',background:'transparent',border:'1px solid '+border,borderRadius:'8px',color:text2,fontSize:'13px',cursor:'pointer'}}>
+              style={{padding:'6px 12px',background:'transparent',border:'1px solid '+border,borderRadius:'8px',color:text2,fontSize:'12px',cursor:'pointer'}}>
               Quitter TV
             </button>
           </div>
@@ -92,49 +96,45 @@ const resolve = async (id) => {
           <div style={{
             flex:1,
             display:'grid',
-            gridTemplateColumns: vehiculesTouches <= 2 ? 'repeat(2,1fr)' 
-              : vehiculesTouches <= 4 ? 'repeat(2,1fr)'
-              : vehiculesTouches <= 6 ? 'repeat(3,1fr)'
-              : 'repeat(4,1fr)',
-            gap:'16px',
+            gridTemplateColumns: `repeat(${cols},1fr)`,
+            gap: compact ? '10px' : '16px',
             overflow:'hidden'
           }}>
             {Object.entries(grouped).map(([vehicle, items]) => (
               <div key={vehicle} style={{
                 background:card,
                 border:'2px solid rgba(232,25,44,0.4)',
-                borderRadius:'16px',
-                padding:'16px',
+                borderRadius:'14px',
+                padding: compact ? '10px' : '16px',
                 display:'flex',
                 flexDirection:'column',
                 overflow:'hidden'
               }}>
-                {/* Header carte */}
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}}>
-                  <span style={{fontWeight:'900',fontSize:'20px'}}>{vehicle}</span>
-                  <span style={{background:'rgba(232,25,44,0.15)',color:red,padding:'4px 12px',borderRadius:'8px',fontSize:'14px',fontWeight:'700'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom: compact ? '6px' : '12px'}}>
+                  <span style={{fontWeight:'900',fontSize: compact ? '16px' : '20px'}}>{vehicle}</span>
+                  <span style={{background:'rgba(232,25,44,0.15)',color:red,padding:'3px 8px',borderRadius:'6px',fontSize: compact ? '11px' : '14px',fontWeight:'700'}}>
                     {items.length} defaut{items.length > 1 ? 's' : ''}
                   </span>
                 </div>
 
-                {/* Liste défauts */}
-                <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:'8px'}}>
-                  {items.map((d, idx) => (
+                <div style={{flex:1,display:'flex',flexDirection:'column',gap: compact ? '4px' : '8px',overflow:'hidden'}}>
+                  {items.map((d) => (
                     <div key={d.id} style={{
                       background:dark3,
-                      borderRadius:'10px',
-                      padding:'10px 12px',
-                      borderLeft:'3px solid '+red
+                      borderRadius:'8px',
+                      padding: compact ? '6px 8px' : '10px 12px',
+                      borderLeft:'3px solid '+red,
+                      flexShrink:0
                     }}>
-                      <div style={{fontSize:'15px',fontWeight:'600',marginBottom:'4px'}}>{d.description}</div>
+                      <div style={{fontSize: compact ? '12px' : '15px',fontWeight:'600',marginBottom:'4px'}}>{d.description}</div>
                       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                        <div style={{fontSize:'12px',color:text3}}>
-                          👤 {d.reportedBy} — 📅 {formatDate(d.createdAt)}
-                          {d.source === 'checklist' && <span style={{color:orange,marginLeft:'6px'}}>⚡ Checklist</span>}
-                          {d.source === 'manuel' && <span style={{color:text2,marginLeft:'6px'}}>✍️ Manuel</span>}
+                        <div style={{fontSize:'11px',color:text3}}>
+                          👤 {d.reportedBy}
+                          {d.source === 'checklist' && <span style={{color:orange,marginLeft:'6px'}}>⚡</span>}
+                          {d.source === 'manuel' && <span style={{color:text2,marginLeft:'6px'}}>✍️</span>}
                         </div>
                         <button onClick={() => resolve(d.id)}
-                          style={{padding:'5px 12px',background:green,border:'none',borderRadius:'7px',color:'#fff',fontSize:'12px',fontWeight:'700',cursor:'pointer',whiteSpace:'nowrap'}}>
+                          style={{padding: compact ? '3px 8px' : '5px 12px',background:green,border:'none',borderRadius:'6px',color:'#fff',fontSize: compact ? '11px' : '12px',fontWeight:'700',cursor:'pointer',whiteSpace:'nowrap'}}>
                           Resolu
                         </button>
                       </div>
@@ -207,5 +207,3 @@ const resolve = async (id) => {
     </div>
   )
 }
-
-
