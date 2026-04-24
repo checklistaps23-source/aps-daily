@@ -14,6 +14,8 @@ const text3 = '#555B6E'
 const green = '#1DB954'
 const orange = '#FF8C00'
 
+
+
 function CarteVehicule({ vehicle, items, resolve, compact }) {
   const scrollRef = useRef(null)
 
@@ -26,10 +28,10 @@ function CarteVehicule({ vehicle, items, resolve, compact }) {
         if (el.scrollTop >= maxScroll - 10) {
           el.scrollTo({ top: 0, behavior: 'smooth' })
         } else {
-          el.scrollBy({ top: 150, behavior: 'smooth' })
+          el.scrollBy({ top: 80, behavior: 'smooth' })
         }
       }
-    }, 3000)
+    }, 5000)
     return () => clearInterval(interval)
   }, [])
 
@@ -73,8 +75,7 @@ function CarteVehicule({ vehicle, items, resolve, compact }) {
               fontWeight:'600',
               marginBottom:'6px',
               wordBreak:'break-word',
-              lineHeight:'1.4',
-              whiteSpace:'pre-wrap'
+              lineHeight:'1.4'
             }}>{d.description}</div>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div style={{fontSize:'11px',color:text3}}>
@@ -93,6 +94,7 @@ function CarteVehicule({ vehicle, items, resolve, compact }) {
     </div>
   )
 }
+
 
 export default function Garage() {
   const [defects, setDefects] = useState([])
