@@ -41,7 +41,9 @@ function CarteVehicule({ vehicle, items, resolve, formatDate, compact }) {
       padding: compact ? '10px' : '14px',
       display: 'flex',
       flexDirection: 'column',
-      height: '100%'
+      height: '100%',
+maxHeight: '100%',
+overflow: 'hidden'
     }}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px',flexShrink:0}}>
         <span style={{fontWeight:'900',fontSize: compact ? '18px' : '22px'}}>{vehicle}</span>
