@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { db } from './firebase'
-import { collection, onSnapshot, deleteDoc, doc } from 'firebase/firestore'
+import { collection, onSnapshot, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore'
 import { CHECKLIST_ALPHA, CHECKLIST_TPMR, CHECKLIST_VSL } from './checklists'
 
 const red = '#E8192C'
@@ -24,15 +24,38 @@ export default function Historique() {
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState([])
   const [detail, setDetail] = useState(null)
+  const [detailTemplate, setDetailTemplate] = useState(null)
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'checklists'), snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      data.sort((a,b) => b.createdAt?.seconds - a.createdAt?.seconds)
+      data.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
       setChecklists(data)
     })
     return () => unsub()
   }, [])
+
+  // Ouvre le detail avec le modele qui a servi ce jour-la
+  // (copie gardee dans la checklist, sinon modele actuel du vehicule, sinon modele de base)
+  const openDetail = async (c) => {
+    setDetail(c)
+    setDetailTemplate(null)
+    if (c.template) { setDetailTemplate(c.template); return }
+    try {
+      const snap = await getDocs(query(collection(db, 'checklistsTemplate'), where('vehiculeNom', '==', c.vehicle)))
+      if (!snap.empty && snap.docs[0].data().sections) {
+        setDetailTemplate(snap.docs[0].data().sections)
+        return
+      }
+    } catch { /* on retombe sur le modele de base */ }
+    setDetailTemplate(TEMPLATES[c.type] || CHECKLIST_ALPHA)
+  }
+
+  const crewNames = (c) => {
+    const v = c.values || {}
+    const names = [v.nom1, v.nom2].filter(n => n && String(n).trim()).map(n => String(n).trim())
+    return names.length ? names.join(' & ') : (c.submittedBy || 'Non renseigne')
+  }
 
   const checkPin = () => {
     if (pin === HISTORY_PIN) { setUnlocked(true); setPin('') }
@@ -69,7 +92,7 @@ export default function Historique() {
     const v = String(val).toLowerCase()
     if (v === 'ok') return { text: 'OK', color: green }
     if (v === 'nok') return { text: 'NOK', color: red }
-    if (v === 'np') return { text: 'N/P', color: text2 }
+    if (v === 'np') return { text: 'Absent', color: red }
     if (v === 'propre' || v === 'bon') return { text: val, color: green }
     if (v === 'sale' || v === 'remplacer') return { text: val, color: red }
     if (v === 'insuf' || v === 'usure') return { text: val, color: orange }
@@ -120,13 +143,13 @@ export default function Historique() {
   }
 
   if (detail) {
-    const template = TEMPLATES[detail.type] || CHECKLIST_ALPHA
+    const template = detailTemplate || TEMPLATES[detail.type] || CHECKLIST_ALPHA
     const values = detail.values || {}
     return (
       <div style={{paddingBottom:'100px'}}>
         <div style={{padding:'16px'}}>
           <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'20px'}}>
-            <button onClick={() => setDetail(null)} style={{background:card,border:'1px solid '+border,color:'#fff',padding:'8px 14px',borderRadius:'10px',cursor:'pointer'}}>
+            <button onClick={() => { setDetail(null); setDetailTemplate(null) }} style={{background:card,border:'1px solid '+border,color:'#fff',padding:'8px 14px',borderRadius:'10px',cursor:'pointer'}}>
               Retour
             </button>
             <div>
@@ -144,7 +167,7 @@ export default function Historique() {
             <div style={{display:'flex',gap:'24px',flexWrap:'wrap'}}>
               <div>
                 <div style={{fontSize:'11px',color:text3,marginBottom:'2px'}}>Ambulancier(s)</div>
-                <div style={{fontWeight:'700'}}>{detail.submittedBy || 'Non renseigne'}</div>
+                <div style={{fontWeight:'700'}}>{crewNames(detail)}</div>
               </div>
               {values.km && (
                 <div>
@@ -235,7 +258,7 @@ export default function Historique() {
             </div>
             {items.map(c => (
               <div key={c.id}
-                onClick={() => selectMode ? toggleSelect(c.id) : setDetail(c)}
+                onClick={() => selectMode ? toggleSelect(c.id) : openDetail(c)}
                 style={{background:selected.includes(c.id)?'rgba(232,25,44,0.05)':card,border:'1px solid '+(selected.includes(c.id)?red:border),borderRadius:'14px',padding:'14px',marginBottom:'8px',cursor:'pointer'}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   {selectMode && (
@@ -254,7 +277,7 @@ export default function Historique() {
                 </div>
                 <div style={{fontSize:'12px',color:text3,marginTop:'6px',display:'flex',gap:'12px'}}>
                   <span>🕐 {formatTime(c.createdAt)}</span>
-                  <span>👤 {c.submittedBy}</span>
+                  <span>👤 {crewNames(c)}</span>
                 </div>
               </div>
             ))}

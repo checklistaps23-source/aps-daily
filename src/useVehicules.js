@@ -9,7 +9,7 @@ export function useVehicules() {
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'vehicules'), snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      data.sort((a,b) => a.nom.localeCompare(b.nom))
+      data.sort((a,b) => (a.nom || '').localeCompare(b.nom || '', 'fr', { numeric: true }))
       setVehicules(data)
       setLoading(false)
     })

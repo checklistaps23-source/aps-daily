@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { CHECKLIST_ALPHA, CHECKLIST_TPMR, CHECKLIST_VSL } from './checklists'
 import { db } from './firebase'
-import { collection, addDoc, getDocs, query, where, Timestamp, doc, getDoc } from 'firebase/firestore'
+import { collection, addDoc, setDoc, getDocs, query, where, Timestamp, doc, getDoc } from 'firebase/firestore'
 
 const red = '#E8192C'
 const dark3 = '#1A1E28'
@@ -20,10 +20,17 @@ const TEMPLATES_BASE = {
   vsl: CHECKLIST_VSL
 }
 
+// Date du jour en heure locale (et non en UTC, qui decale apres minuit)
+function localDateISO() {
+  const n = new Date()
+  return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0') + '-' + String(n.getDate()).padStart(2, '0')
+}
+
 export default function Checklist({ vehicle, type, vehiculeId, onBack }) {
   const [values, setValues] = useState({})
   const [template, setTemplate] = useState(TEMPLATES_BASE[type] || CHECKLIST_ALPHA)
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     const loadTemplate = async () => {
@@ -45,7 +52,7 @@ export default function Checklist({ vehicle, type, vehiculeId, onBack }) {
         } else {
           setTemplate(TEMPLATES_BASE[type] || CHECKLIST_ALPHA)
         }
-      } catch(e) {
+      } catch {
         setTemplate(TEMPLATES_BASE[type] || CHECKLIST_ALPHA)
       }
       setLoading(false)
@@ -56,6 +63,7 @@ export default function Checklist({ vehicle, type, vehiculeId, onBack }) {
   const set = (id, val) => setValues(v => ({ ...v, [id]: val }))
 
   const handleSubmit = async () => {
+    if (submitting) return
     const missing = []
     template.forEach(s => s.items.forEach(item => {
       if (item.required && !values[item.id] && item.type !== 'textarea') {
@@ -74,8 +82,9 @@ export default function Checklist({ vehicle, type, vehiculeId, onBack }) {
       return
     }
 
+    setSubmitting(true)
     try {
-      const BAD_VALUES = ['nok', 'remplacer', 'insuf', 'usure', 'sale', 'pleine']
+      const BAD_VALUES = ['nok', 'remplacer', 'insuf', 'usure', 'sale', 'pleine', 'np']
       const defautsAuto = []
 
       template.forEach(section => {
@@ -101,7 +110,7 @@ export default function Checklist({ vehicle, type, vehiculeId, onBack }) {
           if (val && BAD_VALUES.includes(String(val).toLowerCase())) {
             defautsAuto.push({
               vehicle, type,
-              description: item.label + ' : ' + val.toUpperCase(),
+              description: item.label + ' : ' + (String(val).toLowerCase() === 'np' ? 'ABSENT' : String(val).toUpperCase()),
               reportedBy: values.nom1 || 'Inconnu',
               source: 'checklist',
               defectKey: vehicle + '_' + item.id,
@@ -134,18 +143,21 @@ export default function Checklist({ vehicle, type, vehiculeId, onBack }) {
           where('defectKey', '==', defaut.defectKey)
         ))
         if (existing.empty) {
-          await addDoc(collection(db, 'defects'), defaut)
+          // Identifiant fixe : meme avec deux envois simultanes, un seul defaut est cree
+          const defectId = defaut.defectKey.replace(/[^A-Za-z0-9_-]/g, '_')
+          await setDoc(doc(db, 'defects', defectId), defaut)
           nbNouveaux++
         }
       }
 
       await addDoc(collection(db, 'checklists'), {
         vehicle, type,
-        date: new Date().toISOString().split('T')[0],
+        date: localDateISO(),
         time: new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}),
         submittedBy: values.nom1 || 'Inconnu',
         hasDefects: defautsAuto.length > 0,
         values,
+        template,
         createdAt: Timestamp.now()
       })
 
@@ -157,8 +169,9 @@ export default function Checklist({ vehicle, type, vehiculeId, onBack }) {
         alert('Checklist soumise — aucun defaut !')
       }
       onBack()
-    } catch(e) {
+    } catch (e) {
       alert('Erreur: ' + e.message)
+      setSubmitting(false)
     }
   }
 
@@ -237,7 +250,7 @@ export default function Checklist({ vehicle, type, vehiculeId, onBack }) {
         style={{width:'100%',background:dark3,border:'1px solid '+border,borderRadius:'9px',padding:'10px 12px',color:'#fff',fontSize:'14px'}}/>
     }
 
-    const hasIssue = val==='nok'||val==='remplacer'||val==='insuf'
+    const hasIssue = val==='nok'||val==='remplacer'||val==='insuf'||val==='np'
     return (
       <div id={'field_' + item.id} key={item.id} style={{background:card,border:'1px solid '+(hasIssue?'rgba(232,25,44,0.3)':border),borderRadius:'12px',padding:'14px',marginBottom:'8px'}}>
         <div style={{fontSize:'14px',fontWeight:'500',marginBottom:'10px'}}>{item.label}{req}</div>
@@ -268,8 +281,8 @@ export default function Checklist({ vehicle, type, vehiculeId, onBack }) {
         </div>
       ))}
       <div style={{padding:'16px'}}>
-        <button onClick={handleSubmit} style={{width:'100%',padding:'16px',background:red,border:'none',borderRadius:'14px',color:'#fff',fontSize:'18px',fontWeight:'800',cursor:'pointer'}}>
-          Soumettre la Checklist
+        <button onClick={handleSubmit} disabled={submitting} style={{width:'100%',padding:'16px',background:red,border:'none',borderRadius:'14px',color:'#fff',fontSize:'18px',fontWeight:'800',cursor:'pointer',opacity:submitting?0.6:1}}>
+          {submitting ? 'Envoi en cours...' : 'Soumettre la Checklist'}
         </button>
       </div>
     </div>

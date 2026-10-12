@@ -29,6 +29,7 @@ export default function Parametres() {
   const [editingVehicule, setEditingVehicule] = useState(null)
   const [editingSections, setEditingSections] = useState([])
   const [saving, setSaving] = useState(false)
+  const [initializing, setInitializing] = useState(false)
   const [newItemLabel, setNewItemLabel] = useState({})
   const [newSectionLabel, setNewSectionLabel] = useState('')
 
@@ -49,17 +50,26 @@ export default function Parametres() {
 
   const handleAdd = async () => {
     if (!newNom.trim()) { alert('Entrez un nom'); return }
-    await addVehicule(newNom.trim(), newType)
+    const nom = newNom.trim()
+    if (vehicules.some(v => (v.nom || '').trim().toLowerCase() === nom.toLowerCase())) {
+      alert(nom + ' existe deja')
+      return
+    }
+    await addVehicule(nom, newType)
     setNewNom('')
   }
 
   const handleDelete = async (id, nom) => {
     if (!window.confirm('Supprimer ' + nom + ' ?')) return
     await deleteVehicule(id)
+    // on supprime aussi son modele de checklist, devenu inutile
+    try { await deleteDoc(doc(db, 'checklistsTemplate', id)) } catch { /* pas de modele : rien a faire */ }
   }
 
   const initFlotte = async () => {
+    if (initializing) return
     if (!window.confirm('Initialiser la flotte de base ?')) return
+    setInitializing(true)
     const vehiculesBase = [
       {nom:'Alpha 1',type:'alpha'},{nom:'Alpha 2',type:'alpha'},{nom:'Alpha 3',type:'alpha'},
       {nom:'Alpha 4',type:'alpha'},{nom:'Alpha 5',type:'alpha'},{nom:'Alpha 6',type:'alpha'},
@@ -69,20 +79,27 @@ export default function Parametres() {
       {nom:'TPMR 7',type:'tpmr'},{nom:'TPMR 8',type:'tpmr'},
       {nom:'VSL 1',type:'vsl'},{nom:'VSL 2',type:'vsl'}
     ]
-    for (const v of vehiculesBase) { await addDoc(collection(db, 'vehicules'), v) }
+    const existants = vehicules.map(v => (v.nom || '').trim().toLowerCase())
+    for (const v of vehiculesBase) {
+      if (existants.includes(v.nom.toLowerCase())) continue
+      await addDoc(collection(db, 'vehicules'), v)
+    }
+    setInitializing(false)
     alert('Flotte initialisee !')
   }
 
   const openChecklistEditor = async (vehicule) => {
     setEditingVehicule(vehicule)
-    const ref = doc(db, 'checklistsTemplate', vehicule.id)
-    const snap = await getDoc(ref)
-    if (snap.exists()) {
-      setEditingSections(JSON.parse(JSON.stringify(snap.data().sections)))
-    } else {
-      const base = CHECKLIST_BASE[vehicule.type] || CHECKLIST_ALPHA
-      setEditingSections(JSON.parse(JSON.stringify(base)))
-    }
+    const base = CHECKLIST_BASE[vehicule.type] || CHECKLIST_ALPHA
+    try {
+      const ref = doc(db, 'checklistsTemplate', vehicule.id)
+      const snap = await getDoc(ref)
+      if (snap.exists() && snap.data().sections) {
+        setEditingSections(JSON.parse(JSON.stringify(snap.data().sections)))
+        return
+      }
+    } catch { /* on retombe sur le modele de base */ }
+    setEditingSections(JSON.parse(JSON.stringify(base)))
   }
 
   const closeEditor = () => {
@@ -95,16 +112,20 @@ export default function Parametres() {
   const saveChecklist = async () => {
     if (!editingVehicule) return
     setSaving(true)
-    await setDoc(doc(db, 'checklistsTemplate', editingVehicule.id), {
-      vehiculeId: editingVehicule.id,
-      vehiculeNom: editingVehicule.nom,
-      type: editingVehicule.type,
-      sections: editingSections,
-      updatedAt: new Date().toISOString()
-    })
+    try {
+      await setDoc(doc(db, 'checklistsTemplate', editingVehicule.id), {
+        vehiculeId: editingVehicule.id,
+        vehiculeNom: editingVehicule.nom,
+        type: editingVehicule.type,
+        sections: editingSections,
+        updatedAt: new Date().toISOString()
+      })
+      alert('Checklist sauvegardee !')
+      closeEditor()
+    } catch (e) {
+      alert('Erreur: ' + e.message)
+    }
     setSaving(false)
-    alert('Checklist sauvegardee !')
-    closeEditor()
   }
 
   const deleteItem = (sIdx, iIdx) => {
@@ -299,7 +320,7 @@ export default function Parametres() {
                 <div style={{fontSize:'12px',color:text3}}>Checklists</div>
               </div>
               <div style={{flex:1,background:dark3,borderRadius:'12px',padding:'12px',textAlign:'center'}}>
-                <div style={{fontSize:'28px',fontWeight:'900',color:'#FF8C00'}}>{defects.filter(d=>d.status==='open').length}</div>
+                <div style={{fontSize:'28px',fontWeight:'900',color:'#FF8C00'}}>{defects.length}</div>
                 <div style={{fontSize:'12px',color:text3}}>Defauts</div>
               </div>
               <div style={{flex:1,background:dark3,borderRadius:'12px',padding:'12px',textAlign:'center'}}>

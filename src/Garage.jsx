@@ -106,7 +106,7 @@ export default function Garage() {
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'defects'), snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      data.sort((a,b) => b.createdAt?.seconds - a.createdAt?.seconds)
+      data.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
       setDefects(data)
     })
     return () => unsub()

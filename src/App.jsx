@@ -32,6 +32,14 @@ const [selectedVehiculeId, setSelectedVehiculeId] = useState(null)
 
   const { vehicules } = useVehicules()
 
+  // Changer d'onglet remet la selection a zero (plus de retour surprise dans une ancienne checklist)
+  const goTo = (id) => {
+    setScreen(id)
+    setFleetType(null)
+    setSelectedVehicle(null)
+    setSelectedVehiculeId(null)
+  }
+
   return (
     <div style={{background:dark,minHeight:'100vh',color:'#F0F2F7',fontFamily:'sans-serif',paddingBottom:'70px'}}>
 
@@ -64,7 +72,7 @@ const [selectedVehiculeId, setSelectedVehiculeId] = useState(null)
       {/* LISTE VEHICULES */}
       {screen === 'vehicles' && fleetType && !selectedVehicle && (
         <div style={{padding:'16px'}}>
-          <button onClick={() => setScreen('home')}
+          <button onClick={() => goTo('home')}
             style={{background:card,border:'1px solid '+border,color:'#fff',padding:'8px 16px',borderRadius:'10px',cursor:'pointer',marginBottom:'16px'}}>
             Retour
           </button>
@@ -101,7 +109,7 @@ const [selectedVehiculeId, setSelectedVehiculeId] = useState(null)
       {screen === 'garage' && <Garage />}
 
       {/* SIGNALER */}
-      {screen === 'report' && <Signaler onBack={() => setScreen('home')} />}
+      {screen === 'report' && <Signaler onBack={() => goTo('home')} />}
 
       {/* HISTORIQUE */}
       {screen === 'history' && <Historique />}
@@ -118,7 +126,7 @@ const [selectedVehiculeId, setSelectedVehiculeId] = useState(null)
           {id:'history',icon:'📋',label:'Historique'},
           {id:'settings',icon:'⚙️',label:'Parametres'},
         ].map(item => (
-          <div key={item.id} onClick={() => setScreen(item.id)}
+          <div key={item.id} onClick={() => goTo(item.id)}
             style={{flex:item.big?1.2:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',cursor:'pointer',gap:'2px'}}>
             {item.big ? (
               <div style={{background:red,borderRadius:'14px',padding:'8px 16px',display:'flex',flexDirection:'column',alignItems:'center',gap:'2px',boxShadow:'0 4px 16px rgba(232,25,44,0.45)'}}>
