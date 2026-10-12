@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect } from 'react'
 import { db } from './firebase'
 import { collection, onSnapshot, deleteDoc, doc } from 'firebase/firestore'
@@ -25,7 +23,9 @@ function CarteVehicule({ vehicle, items, resolve, compact }) {
     return () => clearInterval(interval)
   }, [items.length])
 
-  const d = items[currentIdx]
+  // Si un défaut est résolu, la liste raccourcit : on ne dépasse jamais la fin
+  const idx = Math.min(currentIdx, items.length - 1)
+  const d = items[idx]
 
   return (
     <div style={{
@@ -43,7 +43,7 @@ function CarteVehicule({ vehicle, items, resolve, compact }) {
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px',flexShrink:0}}>
         <span style={{fontWeight:'900',fontSize: compact ? '15px' : '19px'}}>{vehicle}</span>
         <span style={{background:'rgba(232,25,44,0.15)',color:red,padding:'2px 8px',borderRadius:'6px',fontSize:'11px',fontWeight:'700'}}>
-          {currentIdx + 1}/{items.length}
+          {idx + 1}/{items.length}
         </span>
       </div>
 
@@ -89,7 +89,7 @@ function CarteVehicule({ vehicle, items, resolve, compact }) {
           {items.map((_, i) => (
             <div key={i} onClick={() => setCurrentIdx(i)} style={{
               width:'7px',height:'7px',borderRadius:'50%',
-              background: i === currentIdx ? red : text3,
+              background: i === idx ? red : text3,
               cursor:'pointer',flexShrink:0
             }}/>
           ))}
